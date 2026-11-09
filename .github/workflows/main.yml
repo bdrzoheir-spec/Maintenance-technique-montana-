@@ -14,18 +14,31 @@ jobs:
       with:
         java-version: '17'
         distribution: 'zulu'
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-    - name: Create App Structure and Files
+    
+    # بناء هيكل مجلدات أندرويد والملفات بشكل صحيح وآلي
+    - name: Setup Android Project Files
       run: |
         mkdir -p app/src/main/java/com/hotel/techapp
         mkdir -p app/src/main/res/layout
-        
-        # 1. build.gradle
-        cat << 'EOF' > app/build.gradle
-        plugins {
-            id 'com.android.application'
+
+        # 1. settings.gradle
+        echo "rootProject.name = 'maintenance-technique-montana-'" > settings.gradle
+        echo "include ':app'" >> settings.gradle
+
+        # 2. build.gradle الرئيسي
+        cat << 'EOF' > build.gradle
+        buildscript {
+            repositories { google(); mavenCentral() }
+            dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
         }
+        allprojects {
+            repositories { google(); mavenCentral() }
+        }
+        EOF
+
+        # 3. app/build.gradle
+        cat << 'EOF' > app/build.gradle
+        plugins { id 'com.android.application' }
         android {
             namespace 'com.hotel.techapp'
             compileSdk 34
@@ -44,13 +57,7 @@ jobs:
         }
         EOF
 
-        # 2. settings.gradle (تم تعديل الاسم هنا ليطابق مستودعك تماماً)
-        cat << 'EOF' > settings.gradle
-        rootProject.name = "maintenance-technique-montana-"
-        include ':app'
-        EOF
-
-        # 3. MainActivity.kt
+        # 4. MainActivity.kt
         cat << 'EOF' > app/src/main/java/com/hotel/techapp/MainActivity.kt
         package com.hotel.techapp
         import android.os.Bundle
@@ -60,14 +67,14 @@ jobs:
         class MainActivity : AppCompatActivity() {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                Toast.makeText(this, "تطبيق صيانة الفندق التقني جاهز"، Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Application Prête !", Toast.LENGTH_LONG).show()
                 val scanner = GmsBarcodeScanning.getClient(this)
                 scanner.startScan()
             }
         }
         EOF
 
-        # 4. AndroidManifest.xml
+        # 5. AndroidManifest.xml
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://android.com">
@@ -83,11 +90,17 @@ jobs:
         </manifest>
         EOF
 
-        # تهيئة أداة البناء تلقائياً باسم المشروع الجديد
-        gradle wrapper --gradle-version 8.5
+    # تهيئة محرك البناء الرسمي لتفادي أخطاء السيرفر الافتراضية
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: 8.5
 
-    - name: Build APK with Gradle Wrapper
-      run: ./gradlew assembleDebug
+    # بناء واستخراج الـ APK
+    - name: Build APK
+      run: gradle assembleDebug
+
+    # رفع وتجهيز التطبيق للتحميل
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
