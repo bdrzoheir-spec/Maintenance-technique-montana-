@@ -1,0 +1,91 @@
+name: Hotel App APK Builder
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+    - name: Create App Structure and Files
+      run: |
+        mkdir -p app/src/main/java/com/hotel/techapp
+        mkdir -p app/src/main/res/layout
+        
+        # 1. build.gradle
+        cat << 'EOF' > app/build.gradle
+        plugins {
+            id 'com.android.application'
+            id 'org.jetbrains.kotlin.android'
+        }
+        android {
+            namespace 'com.hotel.techapp'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.hotel.techapp"
+                minSdk 24
+                targetSdk 34
+                versionCode 1
+                versionName "1.0"
+            }
+        }
+        dependencies {
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'com.google.mlkit:vision-codescanner:16.1.0'
+        }
+        EOF
+
+        # 2. settings.gradle
+        cat << 'EOF' > settings.gradle
+        rootProject.name = "Hotel-Maintenance-App"
+        include ':app'
+        EOF
+
+        # 3. MainActivity.kt
+        cat << 'EOF' > app/src/main/java/com/hotel/techapp/MainActivity.kt
+        package com.hotel.techapp
+        import android.os.Bundle
+        import android.widget.Toast
+        import androidx.appcompat.app.AppCompatActivity
+        import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+        class MainActivity : AppCompatActivity() {
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+                Toast.makeText(this, "تطبيق صيانة الفندق التقني جاهز", Toast.LENGTH_LONG).show()
+                val scanner = GmsBarcodeScanning.getClient(this)
+                scanner.startScan()
+            }
+        }
+        EOF
+
+        # 4. AndroidManifest.xml
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://android.com">
+            <uses-permission android:name="android.permission.CAMERA" />
+            <application android:label="صيانة الفندق" android:theme="@style/Theme.AppCompat.Light">
+                <activity android:name=".MainActivity" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+
+    - name: Build APK with Gradle
+      run: gradle assembleDebug
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: Hotel-App-APK
+        path: "**/build/outputs/apk/debug/*.apk"
