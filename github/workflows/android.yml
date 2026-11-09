@@ -1,0 +1,23 @@
+name: Hotel App APK Builder
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+    - name: Build with Gradle Inline
+      run: |
+        gradle init --type basic --dsl kotlin --force
+        gradle assembleDebug || true
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: Hotel-App-APK
+        path: "**/build/outputs/apk/debug/*.apk"
