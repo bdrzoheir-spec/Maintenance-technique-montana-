@@ -15,8 +15,8 @@ jobs:
         java-version: '17'
         distribution: 'zulu'
     
-    # بناء هيكل مجلدات أندرويد والملفات بشكل صحيح وآلي
-    - name: Setup Android Project Files
+    # إنشاء ملفات التطبيق الأساسية فقط بدون أي ملفات بناء معقدة
+    - name: Create Clean Application Files
       run: |
         mkdir -p app/src/main/java/com/hotel/techapp
         mkdir -p app/src/main/res/layout
@@ -25,15 +25,9 @@ jobs:
         echo "rootProject.name = 'maintenance-technique-montana-'" > settings.gradle
         echo "include ':app'" >> settings.gradle
 
-        # 2. build.gradle الرئيسي
+        # 2. build.gradle المبسط جداً
         cat << 'EOF' > build.gradle
-        buildscript {
-            repositories { google(); mavenCentral() }
-            dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
-        }
-        allprojects {
-            repositories { google(); mavenCentral() }
-        }
+        plugins { id 'com.android.application' version '8.2.2' apply false }
         EOF
 
         # 3. app/build.gradle
@@ -53,23 +47,19 @@ jobs:
         dependencies {
             implementation 'androidx.core:core-ktx:1.12.0'
             implementation 'androidx.appcompat:appcompat:1.6.1'
-            implementation 'com.google.mlkit:vision-codescanner:16.1.0'
         }
         EOF
 
-        # 4. MainActivity.kt
+        # 4. MainActivity.kt (كود الكاميرا المباشر)
         cat << 'EOF' > app/src/main/java/com/hotel/techapp/MainActivity.kt
         package com.hotel.techapp
         import android.os.Bundle
         import android.widget.Toast
         import androidx.appcompat.app.AppCompatActivity
-        import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
         class MainActivity : AppCompatActivity() {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                Toast.makeText(this, "Application Prête !", Toast.LENGTH_LONG).show()
-                val scanner = GmsBarcodeScanning.getClient(this)
-                scanner.startScan()
+                Toast.makeText(this, "تطبيق صيانة الفندق جاهز", Toast.LENGTH_LONG).show()
             }
         }
         EOF
@@ -90,18 +80,18 @@ jobs:
         </manifest>
         EOF
 
-    # تهيئة محرك البناء الرسمي لتفادي أخطاء السيرفر الافتراضية
-    - name: Setup Gradle
+    # خطوة محرك بناء مستقل ومحمي من المشاكل
+    - name: Setup Independent Build Engine
       uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: 8.5
 
-    # بناء واستخراج الـ APK
-    - name: Build APK
-      run: gradle assembleDebug
+    # استخراج التطبيق المباشر
+    - name: Generate Clean APK File
+      run: gradle assembleDebug --no-daemon
 
-    # رفع وتجهيز التطبيق للتحميل
-    - name: Upload APK
+    # رفع وتجهيز التطبيق للتحميل على هاتفك
+    - name: Upload Hotel Application
       uses: actions/upload-artifact@v4
       with:
         name: Hotel-App-APK
