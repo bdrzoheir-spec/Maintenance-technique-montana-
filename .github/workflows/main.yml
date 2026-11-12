@@ -19,8 +19,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android Licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Create Clean Application Files
         run: |
@@ -151,4 +151,3 @@ jobs:
         with:
           name: Maintenance-Montana-APK
           path: app/build/outputs/apk/debug/app-debug.apk
-          
