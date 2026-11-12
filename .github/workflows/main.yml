@@ -1,98 +1,154 @@
 name: Hotel App APK Builder
+
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'zulu'
-    
-    # إنشاء ملفات التطبيق الأساسية فقط بدون أي ملفات بناء معقدة
-    - name: Create Clean Application Files
-      run: |
-        mkdir -p app/src/main/java/com/hotel/techapp
-        mkdir -p app/src/main/res/layout
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-        # 1. settings.gradle
-        echo "rootProject.name = 'maintenance-technique-montana-'" > settings.gradle
-        echo "include ':app'" >> settings.gradle
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-        # 2. build.gradle المبسط جداً
-        cat << 'EOF' > build.gradle
-        plugins { id 'com.android.application' version '8.2.2' apply false }
-        EOF
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-        # 3. app/build.gradle
-        cat << 'EOF' > app/build.gradle
-        plugins { id 'com.android.application' }
-        android {
-            namespace 'com.hotel.techapp'
-            compileSdk 34
-            defaultConfig {
-                applicationId "com.hotel.techapp"
-                minSdk 24
-                targetSdk 34
-                versionCode 1
-                versionName "1.0"
-            }
-        }
-        dependencies {
-            implementation 'androidx.core:core-ktx:1.12.0'
-            implementation 'androidx.appcompat:appcompat:1.6.1'
-        }
-        EOF
+      - name: Create Clean Application Files
+        run: |
+          mkdir -p app/src/main/java/com/montana/maintenance
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
 
-        # 4. MainActivity.kt (كود الكاميرا المباشر)
-        cat << 'EOF' > app/src/main/java/com/hotel/techapp/MainActivity.kt
-        package com.hotel.techapp
-        import android.os.Bundle
-        import android.widget.Toast
-        import androidx.appcompat.app.AppCompatActivity
-        class MainActivity : AppCompatActivity() {
-            override fun onCreate(savedInstanceState: Bundle?) {
-                super.onCreate(savedInstanceState)
-                Toast.makeText(this, "تطبيق صيانة الفندق جاهز", Toast.LENGTH_LONG).show()
-            }
-        }
-        EOF
+          cat << 'EOF' > settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "Maintenance-technique-montana"
+          include ':app'
+          EOF
 
-        # 5. AndroidManifest.xml
-        cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://android.com">
-            <uses-permission android:name="android.permission.CAMERA" />
-            <application android:label="صيانة الفندق" android:theme="@style/Theme.AppCompat.Light">
-                <activity android:name=".MainActivity" android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-            </application>
-        </manifest>
-        EOF
+          cat << 'EOF' > build.gradle
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
+              id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+          }
+          EOF
 
-    # خطوة محرك بناء مستقل ومحمي من المشاكل
-    - name: Setup Independent Build Engine
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-version: 8.5
+          cat << 'EOF' > gradle.properties
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          kotlin.code.style=official
+          android.nonTransitiveRClass=true
+          EOF
 
-    # استخراج التطبيق المباشر
-    - name: Generate Clean APK File
-      run: gradle assembleDebug --no-daemon
+          cat << 'EOF' > app/build.gradle
+          plugins {
+              id 'com.android.application'
+              id 'org.jetbrains.kotlin.android'
+          }
 
-    # رفع وتجهيز التطبيق للتحميل على هاتفك
-    - name: Upload Hotel Application
-      uses: actions/upload-artifact@v4
-      with:
-        name: Hotel-App-APK
-        path: "**/build/outputs/apk/debug/*.apk"
+          android {
+              namespace 'com.montana.maintenance'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId "com.montana.maintenance"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+          }
+
+          dependencies {
+              implementation 'androidx.core:core-ktx:1.12.0'
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.11.0'
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com">
+              <application
+                  android:allowBackup="true"
+                  android:label="Maintenance Montana"
+                  android:theme="@style/Theme.Material3.DayNight">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/montana/maintenance/MainActivity.kt
+          package com.montana.maintenance
+
+          import android.os.Bundle
+          import android.widget.TextView
+          import androidx.appcompat.app.AppCompatActivity
+
+          class MainActivity : AppCompatActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  val textView = TextView(this)
+                  textView.text = "Maintenance Technique Montana"
+                  textView.textSize = 22f
+                  textView.setPadding(40, 40, 40, 40)
+                  setContentView(textView)
+              }
+          }
+          EOF
+
+      - name: Setup Gradle Wrapper
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+
+      - name: Generate Clean APK File
+        run: gradle assembleDebug --no-daemon
+
+      - name: Upload Hotel Application
+        uses: actions/upload-artifact@v4
+        with:
+          name: Maintenance-Montana-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          
